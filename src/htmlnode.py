@@ -12,7 +12,7 @@ class HTMLNode():
           if not isinstance(self.props, dict):
                raise TypeError("HTMLNode object does not have a valid props dictionary initialized")
           for key in self.props:
-               str += f" {key}={self.props[key]}"
+               str += f" {key}=\"{self.props[key]}\""
           return str
      def __repr__(self):
           return f"HTMLNode(tag:{self.tag}, value:{self.value}, children:{self.children}, props:{self.props})"

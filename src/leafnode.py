@@ -1,4 +1,4 @@
-from htmlnode import HTMLNode
+from src.htmlnode import HTMLNode
 
 class LeafNode(HTMLNode):
      def __init__(self,tag,value,props=None):
@@ -16,7 +16,6 @@ class LeafNode(HTMLNode):
                else:
                     return f"<{self.tag}>{self.value}</{self.tag}>"
           except TypeError as e:
-               print(e)
                return f"<{self.tag}>{self.value}</{self.tag}>"
           
           
