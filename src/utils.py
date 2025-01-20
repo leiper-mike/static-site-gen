@@ -66,3 +66,12 @@ def split_nodes_link(old_nodes):
           if text:
                new_nodes.append(TextNode(text,TextType.TEXT))
      return new_nodes
+
+def markdown_to_blocks(markdown):
+     #two newlines indicate a blank line
+     init = markdown.split("\n\n")
+     #strip each line of trailing/leading whitespace (includes new lines) 
+     maplist = list(map(lambda str: str.strip(), init))
+     #filter out empty strings
+     filterlist = list(filter(lambda s: s, maplist))
+     return filterlist

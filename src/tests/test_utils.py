@@ -1,7 +1,7 @@
 import unittest
 
 from src.textnode import TextNode, TextType
-from src.utils import split_nodes_delimiter,extract_markdown_images,extract_markdown_links,split_nodes_link, split_nodes_image, text_to_textnodes
+from src.utils import *
 
 class TestUtils(unittest.TestCase):
      
@@ -201,5 +201,51 @@ class TestTextToTextnodes(unittest.TestCase):
           with self.assertRaises(ValueError) as e:
                text_to_textnodes(text1)
           self.assertEqual(e.exception.__str__(), "Invalid markdown syntax, missing closing/starting delimiter")
+
+class TestMarkdownBlocks(unittest.TestCase):
+     def test(self):
+          str = """# This is a heading
+
+               This is a paragraph of text. It has some **bold** and *italic* words inside of it.
+
+               * This is the first list item in a list block\n* This is a list item\n* This is another list item"""
+          ret = markdown_to_blocks(str)
+          correct = ["# This is a heading",
+                    "This is a paragraph of text. It has some **bold** and *italic* words inside of it.",
+                    "* This is the first list item in a list block\n* This is a list item\n* This is another list item"]
+          self.assertListEqual(ret,correct)
+     def multiline_test(self):
+          str = """# This is a really long \nheading
+
+               This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.
+
+               * This is the first list item in a list block\n* This is a list item\n* This is another list item"""
+          ret = markdown_to_blocks(str)
+          correct = ["# This is a heading",
+                    "This is a paragraph of text. It has some **bold** and *italic* words inside of it.",
+                    "* This is the first list item in a list block\n* This is a list item\n* This is another list item"]
+          self.assertListEqual(ret,correct)
+     def test_trailing_new_lines(self):
+          str = """# This is a really long \nheading\n\n\n\n\n\n
+
+               This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.\n\n\n\n
+
+               * This is the first list item in a list block\n* This is a list item\n* This is another list item\n\n\n\n\n"""
+          ret = markdown_to_blocks(str)
+          correct = ["# This is a really long \nheading",
+                    "This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.",
+                    "* This is the first list item in a list block\n* This is a list item\n* This is another list item"]
+          self.assertListEqual(ret,correct)
+     def test_leading_new_lines(self):
+          str = """\n\n\n\n\n\n\n# This is a really long \nheading
+
+               This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.\n\n\n\n
+
+               * This is the first list item in a list block\n* This is a list item\n* This is another list item"""
+          ret = markdown_to_blocks(str)
+          correct = ["# This is a really long \nheading",
+                    "This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.",
+                    "* This is the first list item in a list block\n* This is a list item\n* This is another list item"]
+          self.assertListEqual(ret,correct)
 if __name__ == "__main__":
      unittest.main()
