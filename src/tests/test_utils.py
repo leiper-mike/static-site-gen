@@ -202,7 +202,7 @@ class TestTextToTextnodes(unittest.TestCase):
                text_to_textnodes(text1)
           self.assertEqual(e.exception.__str__(), "Invalid markdown syntax, missing closing/starting delimiter")
 
-class TestMarkdownBlocks(unittest.TestCase):
+class TestMarkdownToBlocks(unittest.TestCase):
      def test(self):
           str = """# This is a heading
 
@@ -247,5 +247,171 @@ class TestMarkdownBlocks(unittest.TestCase):
                     "This is a paragraph of text.\nIt has some **bold** and *italic* words inside of it.",
                     "* This is the first list item in a list block\n* This is a list item\n* This is another list item"]
           self.assertListEqual(ret,correct)
+class TestBlockToBlockType(unittest.TestCase):
+     def test_heading(self):
+          block = "###### Heading"
+          self.assertEqual(block_to_block_type(block),"heading")
+     def test_code(self):
+          block = "```code code code```"
+          self.assertEqual(block_to_block_type(block),"code")
+     def test_quote(self):
+          block = "> don't believe everything you read on the internet \n>- abraham lincoln"
+          self.assertEqual(block_to_block_type(block),"quote")
+     def test_ulist(self):
+          block = "* list thingy\n- other list thingy\n* yet another list thingy"
+          self.assertEqual(block_to_block_type(block),"ulist")
+     def test_olist(self):
+          block = "1. list thingy\n2. other list thingy\n3. yet another list thingy"
+          self.assertEqual(block_to_block_type(block),"olist")
+     def test_paragraph(self):
+          block = "paragraph paragraph"
+          self.assertEqual(block_to_block_type(block),"paragraph")
+     def test_paragraph_fallback(self):
+          block = "#nospace\n``notenoughticks``\n>other things besides quotes\n* other things besides ulist\n1. other things besides olist"
+          self.assertEqual(block_to_block_type(block),"paragraph")
+     def test_out_of_order_olist(self):
+          block = "1. list\n2. list\n5. 3 m'lord!"
+          self.assertEqual(block_to_block_type(block),"paragraph")
+     def test_quote_ulist_olist(self):
+          block = "1. list\n> list\n- 3 m'lord!"
+          self.assertEqual(block_to_block_type(block),"paragraph")
+
+class TestMarkdownToHTML(unittest.TestCase):
+     def test_one_header(self):
+          markdown = "# This is a **header**, which has *children*"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[ParentNode("h1",[
+               LeafNode("","This is a "),
+               LeafNode("b","header"),
+               LeafNode("",", which has "),
+               LeafNode("i","children")])])
+          self.assertEqual(result,correct)
+     def test_multiple_header(self):
+          markdown = "# This is a **header**, which has *children*\n\n### h3"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("h1",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","header"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children")]),
+               ParentNode("h3",[
+                    LeafNode("","h3")])])
+          self.assertEqual(result,correct)
+     def test_multiline_header(self):
+          markdown = "# This is a **header**, which has *children*\nand multiple lines"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("h1",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","header"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children"),
+                    LeafNode("br",""),
+                    LeafNode("", "and multiple lines")])])
+          self.assertEqual(result,correct)     
+     def test_code(self):
+          markdown = "```This is a **code block**, which has *children*```"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("code",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","code block"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children")])])
+          self.assertEqual(result,correct)
+     def test_multiple_code(self):
+          markdown = "```This is a **code block**, which has *children*```\n\n```This is a **code block**, which has *children*```"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("code",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","code block"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children")]),
+               ParentNode("code",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","code block"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children")])])
+          self.assertEqual(result,correct)
+     def test_multiline_code(self):
+          markdown = "```This is a **code block**, which has *children*\nprint('hello world')```"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("code",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","code block"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children"),
+                    LeafNode("br",""),
+                    LeafNode("","print('hello world')")])])
+          self.assertEqual(result,correct)
+     def test_quote(self):
+          markdown = "> This is a **block quote**, which has *children*"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("blockquote",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","block quote"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children")])])
+          self.assertEqual(result,correct)
+     def test_multiline_quote(self):
+          markdown = "> This is a **block quote**, which has *children*\n> - Abraham Lincoln"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("blockquote",[
+                    LeafNode("","This is a "),
+                    LeafNode("b","block quote"),
+                    LeafNode("",", which has "),
+                    LeafNode("i","children"),
+                    LeafNode("br",""),
+                    LeafNode("","- Abraham Lincoln")])])
+          self.assertEqual(result,correct)
+     def test_ulist(self):
+          markdown = "* This is an **unordered list**, which has *children*\n- Abraham Lincoln"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("ul",[
+                    ParentNode("li",[
+                         LeafNode("","This is an "),
+                         LeafNode("b","unordered list"),
+                         LeafNode("",", which has "),
+                         LeafNode("i","children")]),
+                    ParentNode("li",[
+                         LeafNode("","Abraham Lincoln")])])])
+          self.assertEqual(result,correct)
+     def test_olist(self):
+          markdown = "1. This is an **ordered list**, which has *children*\n2. Abraham Lincoln"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("ol",[
+                    ParentNode("li",[
+                         LeafNode("","This is an "),
+                         LeafNode("b","ordered list"),
+                         LeafNode("",", which has "),
+                         LeafNode("i","children")]),
+                    ParentNode("li",[
+                         LeafNode("","Abraham Lincoln")])])])
+          self.assertEqual(result,correct)
+     def test_paragraph(self):
+          markdown = "This is **text** with an *italic* word and a `code block` and an ![obi wan image](https://i.imgur.com/fJRm4Vk.jpeg) and a [link](https://boot.dev)"
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[
+               ParentNode("p",[
+                    LeafNode("","This is "),
+                    LeafNode("b","text"),
+                    LeafNode(""," with an "),
+                    LeafNode("i","italic"),
+                    LeafNode(""," word and a "),
+                    LeafNode("code","code block"),
+                    LeafNode(""," and an "),
+                    LeafNode("img","", props={"src":"https://i.imgur.com/fJRm4Vk.jpeg", "alt":"obi wan image"}),
+                    LeafNode(""," and a "),
+                    LeafNode("a","link", props={"href":"https://boot.dev"}),
+               ])])
+          self.assertEqual(result,correct)
+     
 if __name__ == "__main__":
      unittest.main()

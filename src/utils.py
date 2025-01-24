@@ -1,4 +1,6 @@
 from src.textnode import TextNode, TextType
+from src.leafnode import LeafNode
+from src.parentnode import ParentNode
 import re
 
 def text_to_textnodes(text):
@@ -75,3 +77,85 @@ def markdown_to_blocks(markdown):
      #filter out empty strings
      filterlist = list(filter(lambda s: s, maplist))
      return filterlist
+
+def block_to_block_type(block):
+     if block[:3] == "```" and block[-3:] == "```":
+          return "code"
+     elif "# " in block[:7]:
+          return "heading"
+     isquote = False
+     isulist = False
+     isolist = False
+     count = 1
+     for line in block.split("\n"):
+          if line[0] == ">" and not isolist and not isulist:
+               isquote = True
+          elif not isolist and not isquote and (line[0] == "*" or line[0] == "-"):
+               isulist = True
+          elif not isulist and not isquote and line[:3] == f"{count}. ":
+               isolist = True
+               count+=1
+          else:
+               isquote = False
+               isulist = False
+               isolist = False
+               break
+               
+     if isquote:
+          return "quote"
+     elif isulist:
+          return "ulist"
+     elif isolist:
+          return "olist"
+     else:
+          return "paragraph"
+
+def markdown_to_html(markdown, parentTag = "div"):
+     blocks = markdown_to_blocks(markdown)
+     children = []
+     for block in blocks:
+          blocktype = block_to_block_type(block)
+          children.append(block_to_html(block, blocktype))
+     return ParentNode(parentTag,children)
+          
+def block_to_html(block, blocktype):
+     if blocktype == "heading":
+          hlevel = block.count("#")
+          return ParentNode(f"h{hlevel}", block_to_html_with_br(block[hlevel+1:]))
+     elif blocktype == "code":
+          return ParentNode("code", block_to_html_with_br(block[3:-3]))
+     elif blocktype == "quote":
+          #remove leading >'s
+          block = "\n".join(map(lambda b: b.lstrip("> "),block.split("\n")))
+          return ParentNode("blockquote",block_to_html_with_br(block))
+     elif blocktype == "ulist":
+          items = block.split("\n")
+          ret = []
+          for item in items:
+               leaves = text_to_children(item.lstrip("*- "))
+               ret.append(ParentNode("li", leaves))
+          return ParentNode("ul",ret)
+     elif blocktype == "olist":
+          items = block.split("\n")
+          ret = []
+          for item in items:
+               leaves = text_to_children(item[item.find(". ") + 2:])
+               ret.append(ParentNode("li", leaves))
+          return ParentNode("ol",ret)
+     elif blocktype == "paragraph":
+          return ParentNode("p", block_to_html_with_br(block))
+
+def text_to_children(text):
+     return list(map(lambda t: t.to_html_node(), text_to_textnodes(text)))
+
+
+#splits block into lines, inserts <br> between lines, converts each line into html
+def block_to_html_with_br(block):
+     leaves = []
+     lines = block.split("\n")
+     for i in range(0,len(lines)):
+          leaves.extend(text_to_children(lines[i]))
+          #add a new line between each line, except the last
+          if i != len(lines)-1 and len(lines) > 1:
+               leaves.append(LeafNode("br",""))
+     return leaves
