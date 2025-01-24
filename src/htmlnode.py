@@ -22,6 +22,8 @@ class HTMLNode():
                     return False
           if self.children:
                if other.children:
+                    if not len(self.children) == len(other.children):
+                         return False
                     for i in range(0,len(self.children)):
                          if not self.children[i] == other.children[i]:
                               return False
