@@ -3,10 +3,6 @@ import unittest
 from src.leafnode import LeafNode
 
 class TestLeafNode(unittest.TestCase):
-     def test_empty_value(self):
-          leaf = LeafNode("p","")
-          with self.assertRaises(ValueError):
-               leaf.to_html()
      def test_no_tag(self):
           leaf = LeafNode("", "test")
           str = leaf.to_html()

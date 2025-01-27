@@ -201,6 +201,16 @@ class TestTextToTextnodes(unittest.TestCase):
           with self.assertRaises(ValueError) as e:
                text_to_textnodes(text1)
           self.assertEqual(e.exception.__str__(), "Invalid markdown syntax, missing closing/starting delimiter")
+     def test_elf(self):
+          text = "**I like Tolkien**. Read my [first post here](/majesty) (sorry the link doesn't work yet)"
+          result = text_to_textnodes(text)
+          correct = [
+               TextNode("I like Tolkien", TextType.BOLD),
+               TextNode(". Read my ", TextType.TEXT),
+               TextNode("first post here", TextType.LINK, url="/majesty"),
+               TextNode(" (sorry the link doesn't work yet)", TextType.TEXT)
+          ]
+          self.assertListEqual(result, correct)
 
 class TestMarkdownToBlocks(unittest.TestCase):
      def test(self):
@@ -417,6 +427,34 @@ class TestMarkdownToHTML(unittest.TestCase):
           result = markdown_to_html(markdown, parentTag="p")
           correct = ParentNode("p",[ParentNode("p",[LeafNode("","test")])])
           self.assertEqual(result,correct)
-     
+     def test_paragraph(self):
+          markdown = "- **Diverse Cultures and Languages**: Each race, from the noble Elves to the sturdy Dwarves, is endowed with its own rich history, customs, and language. Tolkien, leveraging his expertise in philology, constructed languages such as Quenya and Sindarin, each with its own grammar and lexicon."
+          result = markdown_to_html(markdown)
+          correct = ParentNode("div",[              
+                         ParentNode("ul",[                    
+                              ParentNode("li",[
+                                   LeafNode("b","Diverse Cultures and Languages"),
+                                   LeafNode("",": Each race, from the noble Elves to the sturdy Dwarves, is endowed with its own rich history, customs, and language. Tolkien, leveraging his expertise in philology, constructed languages such as Quenya and Sindarin, each with its own grammar and lexicon.")                                        
+                              ])])])
+
+          self.assertEqual(result,correct)
+
+class TestExtractTitle(unittest.TestCase):
+     def test_extract_title(self):
+          markdown = "# title"
+          result = extract_title(markdown)
+          correct = "title"
+          self.assertEqual(result,correct)
+     def test_extract_title_multiple_headers(self):
+          markdown = "### title\n# the real title"
+          result = extract_title(markdown)
+          correct = "the real title"
+          self.assertEqual(result,correct)
+     def test_extract_no_title(self):
+          markdown = "no title"
+          with self.assertRaises(ValueError) as e:
+               extract_title(markdown)
+          self.assertEqual(e.exception.__str__(),"No title found in the markdown")
+           
 if __name__ == "__main__":
      unittest.main()

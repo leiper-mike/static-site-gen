@@ -21,7 +21,7 @@ def split_nodes_delimiter(old_nodes, delimiter, text_type):
           nodes = node.text.split(delimiter)
           # nodes length should never be even, means we were missing a closing/starting delimiter
           if len(nodes) % 2 == 0:
-               raise ValueError("Invalid markdown syntax, missing closing/starting delimiter")
+               raise ValueError(f"Invalid markdown syntax, missing closing/starting delimiter")
           for i in range(0,len(nodes)):
                #every other string should be the type we're looking for
                if i % 2 != 0:
@@ -92,7 +92,7 @@ def block_to_block_type(block):
      for line in block.split("\n"):
           if line[0] == ">" and not isolist and not isulist:
                isquote = True
-          elif not isolist and not isquote and (line[0] == "*" or line[0] == "-"):
+          elif not isolist and not isquote and (line[0:2] == "* " or line[0:2] == "- "):
                isulist = True
           elif not isulist and not isquote and line[:3] == f"{count}. ":
                isolist = True
@@ -117,6 +117,7 @@ def markdown_to_html(markdown, parentTag = "div"):
      children = []
      for block in blocks:
           blocktype = block_to_block_type(block)
+          #print(blocktype)
           children.append(block_to_html(block, blocktype))
      return ParentNode(parentTag,children)
           
@@ -134,7 +135,8 @@ def block_to_html(block, blocktype):
           items = block.split("\n")
           ret = []
           for item in items:
-               leaves = text_to_children(item.lstrip("*- "))
+               item = item[2:]
+               leaves = text_to_children(item)
                ret.append(ParentNode("li", leaves))
           return ParentNode("ul",ret)
      elif blocktype == "olist":
@@ -183,3 +185,37 @@ def copy(path):
                print(f"moving to dir: {relPath}")
                os.mkdir(publicRelPath)
                copy(f"{relPath}")
+
+def extract_title(markdown):
+     lines = markdown.split("\n")
+     for line in lines:
+          if line.count("#") == 1 and "# " in line:
+               return line.strip("# ")
+     raise ValueError("No title found in the markdown")
+
+def generate_page(from_path, template_path, to_path):
+     print(f"Generating page from {from_path} to {to_path}, using {template_path}")
+     with open(from_path, "r") as content_file:
+          content = content_file.read()
+          with open(template_path, "r") as template_file:
+               template = template_file.read()
+               html = markdown_to_html(content)
+               title = extract_title(content)
+               template = template.replace(" {{ Title }} ", title)
+               template = template.replace("{{ Content }}", html.to_html())
+               # remove the last path which would be the file name
+               to_folders = "/".join(to_path.split("/")[:-1])
+               os.makedirs(to_folders, exist_ok=True)
+               with open(to_path, "w") as to_file:
+                    to_file.write(template)
+
+def generate_pages_recursive(from_path_dir, template_path, to_path_dir):
+     paths = os.listdir(from_path_dir)
+     for path in paths:
+          relPath = f"{from_path_dir}/{path}"
+          path = path.replace(".md",".html")
+          relToPath = f"{to_path_dir}/{path}"
+          if os.path.isfile(relPath):
+               generate_page(relPath,template_path,relToPath)
+          else:
+               generate_pages_recursive(relPath,template_path,relToPath)
