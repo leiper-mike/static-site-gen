@@ -412,6 +412,11 @@ class TestMarkdownToHTML(unittest.TestCase):
                     LeafNode("a","link", props={"href":"https://boot.dev"}),
                ])])
           self.assertEqual(result,correct)
+     def test_outer_tag(self):
+          markdown = "test"
+          result = markdown_to_html(markdown, parentTag="p")
+          correct = ParentNode("p",[ParentNode("p",[LeafNode("","test")])])
+          self.assertEqual(result,correct)
      
 if __name__ == "__main__":
      unittest.main()
