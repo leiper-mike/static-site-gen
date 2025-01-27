@@ -1,6 +1,8 @@
 from src.textnode import TextNode, TextType
 from src.leafnode import LeafNode
 from src.parentnode import ParentNode
+import os
+import shutil
 import re
 
 def text_to_textnodes(text):
@@ -159,3 +161,25 @@ def block_to_html_with_br(block):
           if i != len(lines)-1 and len(lines) > 1:
                leaves.append(LeafNode("br",""))
      return leaves
+
+def clean_public():
+     shutil.rmtree("./public")
+     os.mkdir("./public")
+
+def copy_static_public():
+     clean_public()
+     copy("./static")
+
+def copy(path):
+     paths = os.listdir(path)
+     publicpath = path.replace("static","public",1)
+     for p in paths:
+          relPath = f"{path}/{p}"
+          publicRelPath = f"{publicpath}/{p}"
+          if os.path.isfile(relPath):
+               print(f"Copying: {relPath} to {publicRelPath}")
+               shutil.copy(f"{relPath}",f"{publicRelPath}")
+          elif os.path.isdir(relPath):
+               print(f"moving to dir: {relPath}")
+               os.mkdir(publicRelPath)
+               copy(f"{relPath}")
